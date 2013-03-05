@@ -4,7 +4,7 @@ CC = avr-gcc
 AS = avr-as
 CFLAGS = -mmcu=atmega168 -DF_CPU=13875000UL -s
 ASFLAGS = $(CFLAGS)
-AVRDUDE = avrdude -c stk200 -p m168
+AVRDUDE = avrdude -c usbasp -p m168
 
 all: $(NAME).bin
 

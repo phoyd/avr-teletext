@@ -53,8 +53,9 @@ void io_setup(void)
     UBRR0L = 0;
     // USART0 MSPIM mode, LSB
     UCSR0C = 0xc4;
-    // enable Tx
-    UCSR0B = 0x18;
+    // We don't enable TX yet, because it will go high when idle
+    // TX is enabled in the ISR during sending.
+    UCSR0B = 0;
 
     // TWI setup
     // no need to set baud rate for slave mode
@@ -113,10 +114,18 @@ const uint8_t fill_buffer[42] PROGMEM = {
  0123456789012345678901234567890123456789
 */
 const char long_text[] PROGMEM = 
-"       "DOUBLEWH"H e l l o   w o r l d !\n"
-"\n"
+GREEN
+"      Hackerspace Bremen e.V. !\n"
 "\n"
 "           "RED"* "GREEN"* "YELLOW"* "BLUE"* "MAGENTA"* "CYAN"*\n\n"
+"           "FLASHON"p r e s e n t s"FLASHOFF"\n"
+"\n"
+"           "RED"* "GREEN"* "YELLOW"* "BLUE"* "MAGENTA"* "CYAN"*\n\n"
+WHITE 
+"Alistair Buxton's AVR Teletext Inserter\n"
+"from "CYAN"https://github.com/ali1234/avr-teletext"WHITE"\n"
+"on a breadboard\n"
+ 
 "  The"CYAN"AVR"WHITE"is a modified Harvard\n"
 "architecture 8-bit RISC single chip\n"
 "microcontroller which was developed by\n"
@@ -169,10 +178,14 @@ int main(void)
     uint8_t twdr = 0;
     uint8_t twsr = 0;
 
+	// Ein Lichtlein..
+	DDRB  |= _BV(DDB0); 
+    PORTB |= _BV(PB0);
+  
     io_setup();
     console_setup();
     control=0;
-    //run_demo();
+    run_demo();
 
     for(;;)
     {
