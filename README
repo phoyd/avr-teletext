@@ -9,13 +9,22 @@ multiple pages. In console mode the I2C port receives individual characters
 and emulates a framebuffer by generating a single page repeatedly. The console
 supports accelerated scrolling.
 
+The project homepage
+https://chili.hackerspace-bremen.de/projects/teletext-inserter
+
 A video of the device operating is here:
 https://plus.google.com/117474986382867317779/posts/eKBn5ePYWbc
+
+A breadboard prototype: 
+http://www.youtube.com/watch?v=iac1NJZw9VQ
 
 Hardware
 --------
 
-The hardware schematic is in schematic.png. General parts list:
+A KiCAD Project with the hardware schematic is in the folder schematic.
+The folder also contains a SVG for quick review.
+
+General parts list:
 
  * AVR microcontroller. I used Atmega 168. Using a part with more RAM would
    allow for multiple consoles are other fancy stuff.
