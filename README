@@ -1,6 +1,9 @@
 avr-teletext
 ------------
 
+See the Wiki for more information: 
+https://github.com/phoyd/avr-teletext/wiki
+
 This is a teletext inserter for AVR microcontroller. It adds teletext to an
 existing composite signal. It is controlled on I2C and features two modes.
 In passthrough mode whole teletext packets are received on I2C and inserted
