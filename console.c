@@ -122,31 +122,32 @@ void console_setup() {
 }
 
 void console_putchar(char c) {
-    switch(c) {
+  if (c==0) return; 
+  switch(c) {
         case '\n':
-            column = 0;
-            row++;
-            break;
-        default:
-            row_buffer(row)[2+column] = parity(c);
-            column++;
-            break;
-    }
-    if(column >= 40) {
-        column = 0;
-        row++;
-    }
-
-    if((row > 0) && ((row%NROWS) == first_row)) {
-        row %= NROWS;
-        first_row++;
-        first_row %= NROWS;
-        console_clear_buffer(row);
-        move_rows();
-    }
+	  column = 0;
+	  row++;
+	  break;
+  default:
+    row_buffer(row)[2+column] = parity(c);
+    column++;
+    break;
+  }
+  if(column >= 40) {
+    column = 0;
+    row++;
+  }
+  
+  if((row > 0) && ((row%NROWS) == first_row)) {
+    row %= NROWS;
+    first_row++;
+    first_row %= NROWS;
+    console_clear_buffer(row);
+    move_rows();
+  }
 }
 
 void console_puthex(char c) {
-    console_putchar(hex((c>>4)&0xf));
-    console_putchar(hex(c&0xf));
+  console_putchar(hex((c>>4)&0xf));
+  console_putchar(hex(c&0xf));
 }

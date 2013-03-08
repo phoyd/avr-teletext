@@ -6,7 +6,7 @@
     avr-teletext is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   (at your option) any later version.
 
     avr-teletext is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -22,6 +22,9 @@
 #include <avr/wdt.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "globals.h"
 #include "console.h"
@@ -34,6 +37,7 @@
 void io_setup(void)
 {
 
+
 // +---+-----+-----+-----+-----+-----+-----+-----+-----+
 // |   |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
 // +---+-----+-----+-----+-----+-----+-----+-----+-----+
@@ -44,35 +48,35 @@ void io_setup(void)
 // | D | RXD | TXD |INT0 |INT1 | T0  | T1  | OUT | OUT |
 // +---+-----+-----+-----+-----+-----+-----+-----+-----+
 
-    // D[7] = shifter enable
-    DDRD = 0x12; PORTD = 0;
+  cli();
+  // D[7] = shifter enable
+  DDRD = 0x12; PORTD = 0;
+  
+  // SPI setup
+  // baud Fosc/2
+  UBRR0H = 0;
+  UBRR0L = 0;
+  // USART0 MSPIM mode, LSB
+  UCSR0C = 0xc4;
+  // We don't enable TX yet, because it will go high when idle
+  // TX is enabled in the ISR during sending.
+  UCSR0B = 0;
+  
+  // TWI setup
+  // no need to set baud rate for slave mode
+  // enable pull-ups
+  DDRC = 0x00; PORTC = 0x30;
+  // match addresses 0x40 - 0x7f
+  TWAR = 0x40<<1;
+  TWAMR = 0x0<<1;
+  // enable TWI, no interrupt request
+  TWCR = _BV(TWEN) | _BV(TWEA);
+  
+  // external INT0 and INT1 enable
+  EICRA = 0x0b;
+  EIMSK = 0x03;
 
-    // SPI setup
-    // baud Fosc/2
-    UBRR0H = 0;
-    UBRR0L = 0;
-    // USART0 MSPIM mode, LSB
-    UCSR0C = 0xc4;
-    // We don't enable TX yet, because it will go high when idle
-    // TX is enabled in the ISR during sending.
-    UCSR0B = 0;
-
-    // TWI setup
-    // no need to set baud rate for slave mode
-    // enable pull-ups
-    DDRC = 0x00; PORTC = 0x30;
-    // match addresses 0x40 - 0x7f
-    TWAR = 0x40<<1;
-    TWAMR = 0x1f<<1;
-    // enable TWI, no interrupt request
-    TWCR = _BV(TWEN) | _BV(TWEA);
-
-    // external INT0 and INT1 enable
-    EICRA = 0x0b;
-    EIMSK = 0x03;
-
-    sei();
-
+  sei();  
 }
 
 volatile uint8_t line_counter;
@@ -92,84 +96,39 @@ const uint8_t fill_buffer[42] PROGMEM = {
 
 /* hmm */
 
-#define BLACK "\x80"
-#define RED "\x01"
-#define GREEN "\x02"
-#define YELLOW "\x83"
-#define BLUE "\x04"
-#define MAGENTA "\x85"
-#define CYAN "\x86"
-#define WHITE "\x07"
-
-#define FLASHON "\x08"
-#define FLASHOFF "\x09"
-#define ENDBOX "\x0A"
-#define STARTBOX "\x0B"
-#define NORMAL "\x0C"
-#define DOUBLEH "\x0D"
-#define DOUBLEW "\x0E"
-#define DOUBLEWH "\x0F"
-
-/*
- 0123456789012345678901234567890123456789
-*/
-const char long_text[] PROGMEM = 
-GREEN
-"      Hackerspace Bremen e.V. !\n"
-"\n"
-"           "RED"* "GREEN"* "YELLOW"* "BLUE"* "MAGENTA"* "CYAN"*\n\n"
-"           "FLASHON"p r e s e n t s"FLASHOFF"\n"
-"\n"
-"           "RED"* "GREEN"* "YELLOW"* "BLUE"* "MAGENTA"* "CYAN"*\n\n"
-WHITE 
-"Alistair Buxton's AVR Teletext Inserter\n"
-"from "CYAN"https://github.com/ali1234/avr-teletext"WHITE"\n"
-"on a breadboard\n"
- 
-"  The"CYAN"AVR"WHITE"is a modified Harvard\n"
-"architecture 8-bit RISC single chip\n"
-"microcontroller which was developed by\n"
-"Atmel in"GREEN"1996."WHITE"The AVR was one of the\n"
-"first microcontroller families to use\n"
-"on-chip flash memory for program\n"
-"storage, as opposed to one-time\n"
-"programmable ROM, EPROM, or EEPROM used\n"
-"by other microcontrollers at the time.\n"
-"\n"
-"           "RED"* "GREEN"* "YELLOW"* "BLUE"* "MAGENTA"* "CYAN"*\n\n"
-" "YELLOW"Teletext"WHITE"(or \"broadcast teletext\") is\n"
-"a television information retrieval\n"
-"service developed in the United Kingdom\n"
-"in the early"GREEN"1970s."WHITE"It offers a range\n"
-"of text-based information, typically\n"
-"including national, international and\n"
-"sporting news, weather and television\n"
-"schedules. Subtitle information is also\n"
-"transmitted in the teletext signal,\n"
-"typically on page 888, 777 or 333."
-;
-
 extern uint8_t first_row;
+extern PROGMEM const char demo_text[]; 
 
-void run_demo(void) {
+void run_demo(unsigned n) {
 
-    for(;;)
+  while(n-->0) 
     {
+      
         int text_pos;
         char c;
         text_pos = 0;
         //console_clear();
-        while((c = pgm_read_byte(&(long_text[text_pos]))) != 0) {
+        while((c = pgm_read_byte(&(demo_text[text_pos]))) != 0) {
             console_putchar(c);
-            delay_ms(10);
+	    delay_ms(1);
             text_pos++;
         }
         //delay_s(1);
         console_putchar('\n');
         console_putchar('\n');
     }
-
 }
+
+int tt_putchar(char c, FILE *f) 
+{
+  cli();
+  console_putchar(c);
+  sei();
+  //  delay_ms(1);
+  return 0; 
+}
+
+static FILE tt_stdout=FDEV_SETUP_STREAM(tt_putchar, NULL, _FDEV_SETUP_WRITE);
 
 int main(void)
 {
@@ -177,16 +136,19 @@ int main(void)
     uint8_t control = 0;
     uint8_t twdr = 0;
     uint8_t twsr = 0;
+    
+    stdout=&tt_stdout; 
 
-	// Ein Lichtlein..
-	DDRB  |= _BV(DDB0); 
+    // Ein Lichtlein..
+    DDRB  |= _BV(DDB0); 
     PORTB |= _BV(PB0);
-  
+    
     io_setup();
     console_setup();
     control=0;
-    run_demo();
-
+    run_demo(0);
+    console_clear();
+    puts("HALLO TELETEXT");
     for(;;)
     {
         
@@ -194,14 +156,15 @@ int main(void)
             twdr = TWDR;
             twsr = TWSR;
             TWCR |= 0x80;
-
+	    printf("\nTWSR=%x, TWDR=%x, TWAMR=%x:" ,twsr,twdr,TWAMR);
             switch(twsr&0xf8) {
                 case 0x60:
                 case 0x68:
-                    dest_register = (twdr>>1)&(TWAMR>>1);
+		  dest_register = (twdr>>1)&(TWAMR>>1);
                     if(control&0x01) passthrough_start();
                     break;
                 case 0x80:
+		  printf("doing %x, %x, %x\n",dest_register,control,twdr);
                     switch(dest_register) {
                         case 0:
                             if(control&0x01) passthrough_putchar(twdr);
