@@ -6,12 +6,12 @@ else ifeq ($(DEVICE),atmega328)
 else 
  $(error "invalid device specified: $(DEVICE)")
 endif
- 
+
 NAME = teletext.$(DEVICE)
 OBJECTS = main.o isrs.o console.o passthrough.o utils.o demotext.o
 CC = avr-gcc
 AS = avr-as
-CFLAGS = -mmcu=$(DEVICE) -DF_CPU=13875000UL -s
+CFLAGS = -Os -mmcu=$(DEVICE) $(EXTRA_CFLAGS) -DF_CPU=13875000UL -s
 ASFLAGS = $(CFLAGS)
 AVRDUDE = avrdude -c usbasp -p $(DUDENAME)
 

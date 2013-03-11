@@ -40,8 +40,9 @@ INT0_vect:
 vsync:
 	in    r0, _SFR_IO_ADDR(SREG)
 	push  r16
-	mov   r16, r1
-	dec   r16
+	;mov   r16, r1
+	;dec   r16
+	ldi   r16,0xff
 	sts   line_counter, r16
 	pop   r16
 	out   _SFR_IO_ADDR(SREG), r0

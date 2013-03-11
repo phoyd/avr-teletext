@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright 2012 Alistair Buxton <a.j.buxton@gmail.com>
 
     This file is part of avr-teletext.
@@ -27,8 +27,6 @@
 #include <stdio.h>
 
 #include "globals.h"
-#include "console.h"
-#include "utils.h"
 
 #define WITH_LM1881
 
@@ -36,7 +34,6 @@
 
 void io_setup(void)
 {
-
 
 // +---+-----+-----+-----+-----+-----+-----+-----+-----+
 // |   |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
@@ -50,8 +47,9 @@ void io_setup(void)
 
   cli();
   // D[7] = shifter enable
-  DDRD = 0x12; PORTD = 0;
-  
+  DDRD = 0x12;
+  PORTD = 0;
+
   // SPI setup
   // baud Fosc/2
   UBRR0H = 0;
@@ -61,22 +59,24 @@ void io_setup(void)
   // We don't enable TX yet, because it will go high when idle
   // TX is enabled in the ISR during sending.
   UCSR0B = 0;
-  
+
   // TWI setup
   // no need to set baud rate for slave mode
   // enable pull-ups
-  DDRC = 0x00; PORTC = 0x30;
-  // match addresses 0x40 - 0x7f
+  DDRC = 0x00;
+  PORTC = 0x30;
+  // match 0x40
   TWAR = 0x40<<1;
   TWAMR = 0x0<<1;
   // enable TWI, no interrupt request
   TWCR = _BV(TWEN) | _BV(TWEA);
-  
+
   // external INT0 and INT1 enable
   EICRA = 0x0b;
   EIMSK = 0x03;
 
-  sei();  
+  sei();
+
 }
 
 volatile uint8_t line_counter;
@@ -85,111 +85,129 @@ volatile uint8_t buffer_head = 0;
 volatile uint8_t buffer_tail = 0;
 
 /* Buffer that we send when we have nothing else to do. */
-const uint8_t fill_buffer[42] PROGMEM = {
-    0x49, 0x15, 0x15, 0x15, 0x15, 0x15, 0x15, 0x15,
-    0x15, 0x15, 
-    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
-    0x20, 0x31, 0xb0, 0xb0, 0x20, 0x54, 0x75, 0xe5, 
-    0x20, 0x31, 0x37, 0x20, 0x4a, 0x61, 0x6e, 0x83, 
-    0x32, 0x31, 0xba, 0xb5, 0xb0, 0x2f, 0xb3, 0xb6
+const uint8_t fill_buffer[42] PROGMEM =
+{
+  0x49, 0x15, 0x15, 0x15, 0x15, 0x15, 0x15, 0x15,
+  0x15, 0x15,
+  0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+  0x20, 0x31, 0xb0, 0xb0, 0x20, 0x54, 0x75, 0xe5,
+  0x20, 0x31, 0x37, 0x20, 0x4a, 0x61, 0x6e, 0x83,
+  0x32, 0x31, 0xba, 0xb5, 0xb0, 0x2f, 0xb3, 0xb6
 };
 
 /* hmm */
 
 extern uint8_t first_row;
-extern PROGMEM const char demo_text[]; 
+extern PROGMEM const char demo_text[];
 
-void run_demo(unsigned n) {
+void run_demo(unsigned n)
+{
 
-  while(n-->0) 
+  while(n-->0)
     {
-      
-        int text_pos;
-        char c;
-        text_pos = 0;
-        //console_clear();
-        while((c = pgm_read_byte(&(demo_text[text_pos]))) != 0) {
-            console_putchar(c);
-	    delay_ms(1);
-            text_pos++;
+
+      int text_pos;
+      char c;
+      text_pos = 0;
+      //console_clear();
+      while((c = pgm_read_byte(&(demo_text[text_pos]))) != 0)
+        {
+          console_putchar(c);
+          delay_ms(1);
+          text_pos++;
         }
-        //delay_s(1);
-        console_putchar('\n');
-        console_putchar('\n');
+      //delay_s(1);
+      console_putchar('\n');
+      console_putchar('\n');
     }
 }
 
-int tt_putchar(char c, FILE *f) 
+int tt_putchar(char c, FILE *f)
 {
   cli();
   console_putchar(c);
   sei();
-  //  delay_ms(1);
-  return 0; 
+  return 0;
 }
 
+#ifdef DEBUG
 static FILE tt_stdout=FDEV_SETUP_STREAM(tt_putchar, NULL, _FDEV_SETUP_WRITE);
+#define SETUP_DEBUG stdout=&tt_stdout
+#define DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define SETUP_DEBUG
+#define DEBUG_PRINTF(...)
+#endif
 
 int main(void)
 {
-    uint8_t dest_register = 0xff;
-    uint8_t control = 0;
-    uint8_t twdr = 0;
-    uint8_t twsr = 0;
-    
-    stdout=&tt_stdout; 
+  uint8_t dest_register = 0xff;
+  uint8_t control = 0;
+  uint8_t twdr = 0;
+  uint8_t twsr = 0;
 
-    // Ein Lichtlein..
-    DDRB  |= _BV(DDB0); 
-    PORTB |= _BV(PB0);
-    
-    io_setup();
-    console_setup();
-    control=0;
-    run_demo(0);
-    console_clear();
-    puts("HALLO TELETEXT");
-    for(;;)
+  SETUP_DEBUG;
+
+  io_setup();
+  console_setup();
+  control=0;
+  run_demo(0);
+  console_clear();
+
+  DEBUG_PRINTF("HALLO TELETEXT");
+
+  for(;;)
     {
-        
-        if(TWCR&0x80) {
-            twdr = TWDR;
-            twsr = TWSR;
-            TWCR |= 0x80;
-	    printf("\nTWSR=%x, TWDR=%x, TWAMR=%x:" ,twsr,twdr,TWAMR);
-            switch(twsr&0xf8) {
-                case 0x60:
-                case 0x68:
-		  dest_register = (twdr>>1)&(TWAMR>>1);
-                    if(control&0x01) passthrough_start();
-                    break;
-                case 0x80:
-		  printf("doing %x, %x, %x\n",dest_register,control,twdr);
-                    switch(dest_register) {
-                        case 0:
-                            if(control&0x01) passthrough_putchar(twdr);
-                            else console_putchar(twdr&0x7f);
-                            break;
-                        case 1:
-                            control = twdr;
-                            if(control&0x01) passthrough_setup();
-                            else console_setup();
-                            break;
-                        default:
-                            
-                            break;
+      if(TWCR&0x80)
+        {
+          twdr = TWDR;
+          twsr = TWSR;
+          TWCR |= 0x80;
+          DEBUG_PRINTF("\nTWSR=%x, TWDR=%x, TWAMR=%x:" ,twsr,twdr,TWAMR);
+          switch(twsr&0xf8)
+            {
+            case 0x60:
+            case 0x68:
+              dest_register = (twdr>>1)&(TWAMR>>1);
+              if(control&0x01) passthrough_start();
+              break;
+            case 0x80:
+              switch(dest_register)
+                {
+                case 0:
+                  if(control&0x01)
+                    {
+                      passthrough_putchar(twdr);
                     }
-                    break;
+                  else
+                    {
+                      console_putchar(twdr&0x7f);
+                    }
+                  break;
+                case 1:
+                  control = twdr;
+                  if(control&0x01)
+                    {
+                      passthrough_setup();
+                    }
+                  else
+                    {
+                      console_setup();
+                    }
+                  break;
                 default:
-                    dest_register = 0xff;
-                    //error - bail out
-                    break;
-            }
-            // clear interrupt
-        }
-        //delay_ms(1);
-    }
-    
-    // Never reached.
-    return(0);
+
+                  break;
+                }
+              break;
+            default:
+              dest_register = 0xff;
+              //error - bail out
+              break;
+            } // switch
+        } // if
+    } // for
+
+  // Never reached.
+  return(0);
 }
