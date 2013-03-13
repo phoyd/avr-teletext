@@ -38,14 +38,16 @@
 .global INT0_vect
 INT0_vect:
 vsync:
-	in    r0, _SFR_IO_ADDR(SREG)
+	push  r15
+	in    r15, _SFR_IO_ADDR(SREG)
 	push  r16
 	;mov   r16, r1
 	;dec   r16
 	ldi   r16,0xff
 	sts   line_counter, r16
 	pop   r16
-	out   _SFR_IO_ADDR(SREG), r0
+	out   _SFR_IO_ADDR(SREG), r15
+	pop   r15
 	reti
 /* End of vertical sync interrupt. */
 
@@ -53,9 +55,11 @@ vsync:
 .global INT1_vect
 INT1_vect:
 hsync:
-	in    r0, _SFR_IO_ADDR(SREG)
+	push  r15
 	push  r16
 	push  r17
+	push  r1
+	in    r15, _SFR_IO_ADDR(SREG)
 
 	lds   r16, line_counter		
 	andi  r16, 0xf0           ; If line_counter = 0 to 15
@@ -66,8 +70,8 @@ do_line:
 	; We can't start outputting the line too early,
 	; but the following code is optimized to start
 	; outputting as soon as possible...
-	delay 45
-	
+	delay 41
+
 	push  ZL                  ; Save registers that are
 	push  ZH                  ; used only when outputting.
 
@@ -168,9 +172,11 @@ skip_line:
 	sts   line_counter, r16
 
 skip_inc:
+	out   _SFR_IO_ADDR(SREG), r15 ; Restore state.
+	pop   r1
 	pop   r17                 ; Restore registers.
 	pop   r16
-	out   _SFR_IO_ADDR(SREG), r0 ; Restore state.
+	pop   r15
 	reti
 
 /* End of horizontal sync interrupt. */
