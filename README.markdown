@@ -48,17 +48,17 @@ I2C addresses
 
 The AVR implements two I2C addresses: data and control.
 
-0x00 - Data address
+   0x00 - Data address
 
-Bits    Function
-0-6     7 bit characters written here will be placed into the output buffer.
-7       Unused.
+   Bits    Function
+   0-6     7 bit characters written here will be placed into the output buffer.
+   7       Unused.
 
-0x01 - Control address
+   0x01 - Control address
 
-Bits
-0       Set mode. 0 = console, 1 = passthrough.
-1-7     Unused.
+   Bits
+   0       Set mode. 0 = console, 1 = passthrough.
+   1-7     Unused.
 
 Console mode
 ------------
