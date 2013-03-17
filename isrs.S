@@ -37,7 +37,6 @@
  * Loads with zero then decrements to get 255. */
 .global INT0_vect
 INT0_vect:
-	
 vsync:
 	push  r15
 	in    r15, _SFR_IO_ADDR(SREG)
@@ -53,7 +52,6 @@ vsync:
 /* Horizontal sync interrupt. */
 .global INT1_vect
 INT1_vect:
-	
 hsync:
 	push  r15
 	in    r15, _SFR_IO_ADDR(SREG)
@@ -62,7 +60,7 @@ hsync:
 	; r1 could been any value in the interrupted routine,
 	; but by convention it shall contain 0
 	push  r1
-	ldi   r1,0
+	clr   r1
 	
 	lds   r16, line_counter		
 	andi  r16, 0xf0           ; If line_counter = 0 to 15
