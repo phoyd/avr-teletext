@@ -37,6 +37,7 @@
  * Loads with zero then decrements to get 255. */
 .global INT0_vect
 INT0_vect:
+	
 vsync:
 	push  r15
 	in    r15, _SFR_IO_ADDR(SREG)
@@ -54,6 +55,7 @@ vsync:
 /* Horizontal sync interrupt. */
 .global INT1_vect
 INT1_vect:
+	
 hsync:
 	push  r15
 	push  r16

@@ -28,7 +28,6 @@ void passthrough_putchar(uint8_t c);
 #define MAGENTA "\x85"
 #define CYAN "\x86"
 #define WHITE "\x07"
-
 #define FLASHON "\x08"
 #define FLASHOFF "\x09"
 #define ENDBOX "\x0A"
@@ -48,6 +47,16 @@ void move_rows();
 void console_clear();
 void console_putchar(char c);
 void console_putchar_and_hex(char c);
+
+void i2c_setup();
+void i2c_handle();
+
+#ifdef DEBUG
+#define DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#define DEBUG_PRINTF(...)
+#endif
+
 #endif /* ASSEMBLER */
 
 #endif

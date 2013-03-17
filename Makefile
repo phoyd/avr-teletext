@@ -8,7 +8,7 @@ else
 endif
 
 NAME = teletext.$(DEVICE)
-OBJECTS = main.o isrs.o console.o passthrough.o utils.o demotext.o
+OBJECTS = main.o isrs.o console.o passthrough.o utils.o demotext.o i2c.o
 CC = avr-gcc
 AS = avr-as
 CFLAGS = -Os -mmcu=$(DEVICE) $(EXTRA_CFLAGS) -DF_CPU=13875000UL -s

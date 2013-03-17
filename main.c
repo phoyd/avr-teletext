@@ -32,6 +32,7 @@
 
 #define nop() __asm__ __volatile__("nop\nnop\nnop\nnop");
 
+
 void io_setup(void)
 {
 
@@ -59,21 +60,17 @@ void io_setup(void)
   // We don't enable TX yet, because it will go high when idle
   // TX is enabled in the ISR during sending.
   UCSR0B = 0;
-
-  // TWI setup
-  // no need to set baud rate for slave mode
+  
   // enable pull-ups
   DDRC = 0x00;
   PORTC = 0x30;
-  // match 0x40
-  TWAR = 0x40<<1;
-  TWAMR = 0x0<<1;
-  // enable TWI, no interrupt request
-  TWCR = _BV(TWEN) | _BV(TWEA);
 
   // external INT0 and INT1 enable
   EICRA = 0x0b;
   EIMSK = 0x03;
+
+  i2c_setup(); 
+  
 
   sei();
 
@@ -133,24 +130,17 @@ int tt_putchar(char c, FILE *f)
 #ifdef DEBUG
 static FILE tt_stdout=FDEV_SETUP_STREAM(tt_putchar, NULL, _FDEV_SETUP_WRITE);
 #define SETUP_DEBUG stdout=&tt_stdout
-#define DEBUG_PRINTF(...) printf(__VA_ARGS__)
 #else
 #define SETUP_DEBUG
-#define DEBUG_PRINTF(...)
 #endif
 
 int main(void)
 {
-  uint8_t dest_register = 0xff;
-  uint8_t control = 0;
-  uint8_t twdr = 0;
-  uint8_t twsr = 0;
 
   SETUP_DEBUG;
 
   io_setup();
   console_setup();
-  control=0;
   run_demo(0);
   console_clear();
 
@@ -158,54 +148,7 @@ int main(void)
 
   for(;;)
     {
-      if(TWCR&0x80)
-        {
-          twdr = TWDR;
-          twsr = TWSR;
-          TWCR |= 0x80;
-          DEBUG_PRINTF("\nTWSR=%x, TWDR=%x, TWAMR=%x:" ,twsr,twdr,TWAMR);
-          switch(twsr&0xf8)
-            {
-            case 0x60:
-            case 0x68:
-              dest_register = (twdr>>1)&(TWAMR>>1);
-              if(control&0x01) passthrough_start();
-              break;
-            case 0x80:
-              switch(dest_register)
-                {
-                case 0:
-                  if(control&0x01)
-                    {
-                      passthrough_putchar(twdr);
-                    }
-                  else
-                    {
-                      console_putchar(twdr&0x7f);
-                    }
-                  break;
-                case 1:
-                  control = twdr;
-                  if(control&0x01)
-                    {
-                      passthrough_setup();
-                    }
-                  else
-                    {
-                      console_setup();
-                    }
-                  break;
-                default:
-
-                  break;
-                }
-              break;
-            default:
-              dest_register = 0xff;
-              //error - bail out
-              break;
-            } // switch
-        } // if
+	i2c_handle();
     } // for
 
   // Never reached.
